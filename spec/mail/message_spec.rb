@@ -893,6 +893,33 @@ describe Mail::Message do
         expect(message.body.to_s).to          eq 'This is a body of text'
       end
 
+      it "should use content_transfer_encoding header" do
+        message = Mail.new do
+          body    'This is a body of text'
+        end
+        message[:content_transfer_encoding] = 'quoted-printable'
+
+        multipart_message = Mail.new do
+          text_part do
+            body    'This is a body of text'
+          end
+
+          html_part do
+            content_type 'text/html; charset=UTF-8'
+            body '<h1>HTML</h1>'
+          end
+        end
+        multipart_message[:content_transfer_encoding] = 'quoted-printable'
+
+        expect(message.content_transfer_encoding).to eq 'quoted-printable'
+        expect(message.body.decoded).to          eq 'This is a body of text'
+
+        expect(multipart_message.parts[0].body.decoded).to          eq 'This is a body of text'
+        expect(multipart_message.parts[1].body.decoded).to          eq '<h1>HTML</h1>'
+        expect(multipart_message.parts[0].content_transfer_encoding).to  eq 'quoted-printable'
+        expect(multipart_message.parts[1].content_transfer_encoding).to  eq 'quoted-printable'
+      end
+
       it "should let you set custom headers with a :headers => {hash}" do
         message = Mail.new(:headers => {'custom-header' => 'mikel'})
         expect(message['custom-header'].decoded).to eq 'mikel'
